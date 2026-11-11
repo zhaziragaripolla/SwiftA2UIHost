@@ -1,4 +1,4 @@
-public import SwiftUI
+import SwiftUI
 import AVKit
 import Foundation
 

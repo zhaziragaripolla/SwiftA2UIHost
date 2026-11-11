@@ -1,4 +1,4 @@
-public import SwiftUI
+import SwiftUI
 import Foundation
 
 extension A2UICatalog {
