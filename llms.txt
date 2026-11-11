@@ -1,0 +1,61 @@
+# SwiftA2UIHost
+
+> A Swift package that renders A2UI (Google's declarative agent-UI format, version 1.0) as native SwiftUI in iOS, macOS and visionOS apps. An AI agent sends JSON describing a screen; the app draws it with native views, including its own components. All 18 basic-catalog components and all 14 basic functions, bindings, validation checks, function calls in both directions and mixed catalogs. v0.9 messages are upgraded on decode. Swift 6, zero dependencies.
+
+## When to use it
+
+- A native Apple-platform app shows agent-built UI, generative UI or server-driven agent UI in the A2UI format (`createSurface`, `updateComponents`, `updateDataModel`, `deleteSurface`).
+- Not for: MCP Apps HTML (`ui://`, `text/html;profile=mcp-app`): use SwiftMCPAppHost. Not a transport: bring your own SSE, WebSocket or A2A connection.
+
+## Install
+
+```swift
+.package(url: "https://github.com/zhaziragaripolla/SwiftA2UIHost.git", from: "1.0.0"),
+// products: SwiftA2UIHostUI (SwiftUI), SwiftA2UIHost (protocol and state, no UI)
+```
+
+## Minimal integration
+
+```swift
+import SwiftA2UIHostUI
+
+let store = A2UISurfaceStore()            // @MainActor, @Observable
+var decoder = A2UILineDecoder()
+store.apply(decoder.feed(bytesFromAgent)) // JSONL, any chunking
+
+let catalog = A2UICatalog(id: "com.example.app:catalog/1", including: .basic)
+    .registering(A2UIComponentSchema(name: "ProductCard", properties: [.init("title", .string, required: true)])) { context in
+        if let product = context.props(as: Product.self) { ProductCard(product) }
+    }
+
+A2UISurfaceView(store: store, surfaceId: "main", catalogs: [catalog]) { action in
+    if let message = action.messageToAgent, let data = try? message.encoded() { send(data) }   // action, callAgentFunction or error
+}
+store.onMessageToAgent = { message in if let data = try? message.encoded() { send(data) } }          // function responses, errors
+
+// For the agent's prompt and transport metadata:
+let manifest = catalog.manifest(version: "1")
+manifest.agentInstructions()
+manifest.rendererCapabilities   // {"1.0": {"supportedCatalogIds": [...]}}
+```
+
+## Key types
+
+- `A2UIMessage`, `A2UILineDecoder`: decoding. `A2UIRendererMessage`: messages back to the agent.
+- `A2UISurfaceStore`: all surfaces, actions, `functions`, `onMessageToAgent`, `diagnostics`.
+- `A2UISurface`: components, data model, `resolvedTree()`, `resolve`, `failingChecks`.
+- `A2UIFunctionRegistry`, `A2UIFunctionDefinition`: built-in and app functions (`.pure` or `.effect`, `allowedCallers`, `requiresUserActivation`).
+- `A2UICatalog`, `A2UIComponentSchema`, `A2UICatalogManifest`, `A2UIDowncompiler`: catalogs, versions and fallbacks.
+- `A2UISurfaceView`, `A2UIComponentContext`: rendering and custom components (`props(as:)`, `binding(_:)`, `performAction()`).
+
+## Security model
+
+- Agent output is untrusted. `rendererOnly` functions can't be called by the agent; `openUrl` and other activation-only functions run only from a tap.
+- Media URLs are filtered (http(s) with a host, data:, same-host relative). Tree size, depth and expression nesting are capped. Bad input is skipped and reported in `diagnostics`.
+
+## Docs
+
+- [README](https://github.com/zhaziragaripolla/SwiftA2UIHost/blob/main/README.md)
+- [RFC-003: A2UI 1.0 support and known gaps](https://github.com/zhaziragaripolla/SwiftA2UIHost/blob/main/Docs/RFCs/RFC-003-a2ui-1.0.md)
+- [Example app](https://github.com/zhaziragaripolla/SwiftA2UIHost/tree/main/Examples/TravelDemo)
+- [A2UI specification](https://a2ui.org/specification/v1.0-a2ui/)

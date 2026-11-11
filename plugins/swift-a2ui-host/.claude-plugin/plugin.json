@@ -1,0 +1,6 @@
+{
+  "name": "swift-a2ui-host",
+  "description": "Claude Code skill for SwiftA2UIHost: render A2UI agent screens natively in SwiftUI",
+  "version": "1.0.0",
+  "author": { "name": "Zhazira Garipolla" }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "swift-a2ui-host",
+  "owner": { "name": "Zhazira Garipolla" },
+  "plugins": [
+    {
+      "name": "swift-a2ui-host",
+      "source": "./plugins/swift-a2ui-host",
+      "description": "Claude Code skill for SwiftA2UIHost: render A2UI agent screens natively in SwiftUI"
+    }
+  ]
+}
